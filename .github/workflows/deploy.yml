@@ -1,0 +1,53 @@
+# Nome do seu workflow
+name: Deploy to GitHub Pages
+
+# Define o gatilho: rodar sempre que houver um push na branch 'main'
+on:
+  push:
+    branches:
+      - main
+
+# Permissões necessárias para o job de deploy
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Define os jobs que serão executados
+jobs:
+  # Job de deploy
+  deploy:
+    # Garante que o deploy não ocorra em um ambiente concorrente
+    concurrency:
+      group: "pages"
+      cancel-in-progress: true
+    # Ambiente onde o site será publicado (configuração padrão)
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    # Sistema operacional que executará o job
+    runs-on: ubuntu-latest
+    # Passos do job
+    steps:
+      # 1. Clona o seu repositório para a máquina virtual
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 2. Verifica se o arquivo public/index.html existe
+      - name: Check for index.html
+        run: test -f public/index.html || (exit 1)
+
+      # 3. Prepara a pasta 'public' para ser publicada
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # 4. Faz o upload do conteúdo da pasta 'public' como um artefato
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./public
+
+      # 5. Publica o artefato no GitHub Pages
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
